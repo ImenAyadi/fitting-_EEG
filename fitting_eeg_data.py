@@ -5,16 +5,17 @@ import numpy as np
 from src.fitting import fit_eeg,estimate_df, fold_covs_per_class
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import os
 
 tmin = 2 # offset for trials 
 delta_t = 3 # considered duration for trials
 resampling = 256 # resampling frequency
 selected_subjs = [12] # list of selected subjects from the twelve subjects of the dataset
 n_jobs = 1
-save_file = True 
+save_file = False 
 plot_cdf = True
 seed = 123
-path=f"results/fitting_eeg_seed={seed}/"
+path=f"results/"
 np.random.seed(seed)
     
 #1. Load the dataset
@@ -29,6 +30,7 @@ K,p,n = X.shape
     # K=nbr of trials/p=nbr of electrodes/n=nbr of times samples
 unique_labels = np.unique(labels)
 X = (X- np.tile(X.mean(axis=2).reshape(K,p,1),(1,1,n)))/1e6 #recenter and rescale trials
+print(n,p) 
 
 #2. Extract covariance matrices 
 covmats = Covariances().fit_transform(X)*n 
@@ -45,11 +47,11 @@ for subject in selected_subjs:
 all_covs, all_labels, inx_per_class = fold_covs_per_class(cov_data)
 df= {k: None for k in unique_labels}
 for k in unique_labels:
-    df[k]= estimate_df(all_covs[inx_per_class[k]],n,df_estimation_method="pop exact",rmt=True)
+    df[k]= estimate_df(all_covs[inx_per_class[k]],n,df_estimation_method="kurtosis estimation",rmt=True)
 print("Dofs for each class : ",df)
 
 
-for quantity_to_fit in ["trace", "norm","det","powertrace_2","powertrace_3","powernorm_2","powernorm_3"]:
+for quantity_to_fit in ["trace", "norm","det","powertrace_3","powernorm_2","powernorm_3"]:
 
     #3. Fitting
     xs,eeg_cdf,wishart_cdf,t_wishart_cdf,tests_W , tests_tW = fit_eeg(quantity_to_fit,all_covs, all_labels, inx_per_class,n, df=df,n_jobs=n_jobs)
@@ -72,6 +74,7 @@ for quantity_to_fit in ["trace", "norm","det","powertrace_2","powertrace_3","pow
                 
     #5. save results in a text file
     if save_file:
+        os.makedirs(path, exist_ok=True)
         for k in unique_labels:
             filename = path+f"cdf_{quantity_to_fit}_class_{k}.txt"
             with open(filename,'w') as f:
