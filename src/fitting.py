@@ -1,5 +1,5 @@
 import numpy as np
-from src.tWishart_ import t_wish_est, t_wishart_rvs, pop, notpop, shrinkage, kurtosis_estimation
+from src.tWishart import t_wish_est, t_wishart_rvs, pop, notpop, shrinkage, kurtosis_estimation
 from joblib import Parallel, delayed
 from tqdm import tqdm
 from scipy.stats import wishart,kstest
